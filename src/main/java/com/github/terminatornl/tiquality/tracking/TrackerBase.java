@@ -118,7 +118,7 @@ public abstract class TrackerBase implements Tracker {
         return SynchronizedAction.run(new SynchronizedAction.Action<TickLogger>() {
             @Override
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
-                if (isProfiling == true) {
+                if (isProfiling) {
                     isProfiling = false;
                     TrackerBase.this.key = null;
                     MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, tickLogger));
@@ -176,7 +176,7 @@ public abstract class TrackerBase implements Tracker {
     public boolean updateOld() {
         while (tickQueue.size() > 0 && getRemainingTime() > 0) {
             TiqualitySimpleTickable tickable = tickQueue.take();
-            if (tickable.tiquality_isLoaded() == false) {
+            if (!tickable.tiquality_isLoaded()) {
                 continue;
             }
             if (isProfiling) {
@@ -209,9 +209,10 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void tickSimpleTickable(TiqualitySimpleTickable tileEntity) {
-        if (updateOld() == false && tileEntity.getUpdateType().mustTick(this) == false) {
+        if (!tileEntity.tickFractional()) return;
+        if (!updateOld() && !tileEntity.getUpdateType().mustTick(this)) {
             /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
-            if (tickQueue.containsTileEntityUpdate(tileEntity) == false) {
+            if (!tickQueue.containsTileEntityUpdate(tileEntity)) {
                 tickQueue.addToQueue(tileEntity);
             }
         } else {
@@ -244,9 +245,10 @@ public abstract class TrackerBase implements Tracker {
             entity.setTrackerHolder(null);
             return;
         }
-        if (updateOld() == false && entity.getUpdateType().mustTick(this) == false) {
+        if (!entity.tickFractional()) return;
+        if (!updateOld() && !entity.getUpdateType().mustTick(this)) {
             /* This Tracker ran out of time, we queue the entity update for another tick.*/
-            if (tickQueue.containsEntityUpdate(entity) == false) {
+            if (!tickQueue.containsEntityUpdate(entity)) {
                 tickQueue.addToQueue(entity);
             }
         } else {
@@ -276,10 +278,12 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
+        if (!((TPSConstrained) block).tickFractional()) return;
+
         UpdateType updateType = ((UpdateTyped) block).getUpdateType();
-        if (updateOld() == false && updateType.mustTick(this) == false) {
+        if (!updateOld() && !updateType.mustTick(this)) {
             /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
-            if (tickQueue.containsBlockUpdate(((TiqualityWorld) world), pos) == false) {
+            if (!tickQueue.containsBlockUpdate(((TiqualityWorld) world), pos)) {
                 tickQueue.addToQueue(new BlockUpdateHolder(world, pos, rand, updateType));
                 //ServerSideEvents.showBlocked(world, pos);
             }
@@ -310,10 +314,12 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
+        if (!((TPSConstrained) block).tickFractional()) return;
+
         UpdateType updateType = ((UpdateTyped) block).getUpdateType();
-        if (updateOld() == false && updateType.mustTick(this) == false) {
+        if (!updateOld() && !updateType.mustTick(this)) {
             /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
-            if (tickQueue.containsRandomBlockUpdate(((TiqualityWorld) world), pos) == false) {
+            if (!tickQueue.containsRandomBlockUpdate(((TiqualityWorld) world), pos)) {
                 tickQueue.addToQueue(new BlockRandomUpdateHolder(world, pos, rand, updateType));
 
 
@@ -343,7 +349,7 @@ public abstract class TrackerBase implements Tracker {
     public void grantTick() {
         if (tickQueue.size() > 0) {
             TiqualitySimpleTickable tickable = tickQueue.take();
-            if (tickable.tiquality_isLoaded() == false) {
+            if (!tickable.tiquality_isLoaded()) {
                 return;
             }
             if (isProfiling) {
@@ -409,14 +415,14 @@ public abstract class TrackerBase implements Tracker {
             return false;
         }
         synchronized (ASSOCIATED_CHUNKS) {
-            ASSOCIATED_CHUNKS.removeIf(chunk -> chunk.isChunkLoaded() == false);
-            if (ASSOCIATED_CHUNKS.size() > 0) {
+            ASSOCIATED_CHUNKS.removeIf(chunk -> !chunk.isChunkLoaded());
+            if (!ASSOCIATED_CHUNKS.isEmpty()) {
                 return true;
             }
         }
         synchronized (DELEGATING_TRACKERS) {
-            DELEGATING_TRACKERS.removeIf(tracker -> tracker.exists() == false);
-            if (DELEGATING_TRACKERS.size() > 0) {
+            DELEGATING_TRACKERS.removeIf(tracker -> !tracker.exists());
+            if (!DELEGATING_TRACKERS.isEmpty()) {
                 return true;
             }
         }
@@ -440,7 +446,7 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public boolean shouldUnload() {
-        return isLoaded() == false && unloadCooldown == 0 && isProfiling == false;
+        return !isLoaded() && unloadCooldown == 0 && !isProfiling;
     }
 
     @Override
@@ -464,7 +470,7 @@ public abstract class TrackerBase implements Tracker {
 
     @Nonnull
     public TickLogger getTickLogger() throws TiqualityException.TrackerWasNotProfilingException {
-        if (isProfiling == false) {
+        if (!isProfiling) {
             throw new TiqualityException.TrackerWasNotProfilingException(this);
         } else {
             return tickLogger;

@@ -41,6 +41,8 @@ public abstract class MixinEntity implements TiqualityEntity {
     private TrackerHolder trackerHolder = null;
     private boolean isMarkedByTiquality = false;
     private UpdateType updateType = UpdateType.DEFAULT;
+    private short targetTPS = 20;
+    private float fractionalTick = 0;
     private ResourceLocation locationCache = null;
 
     @Shadow
@@ -151,6 +153,26 @@ public abstract class MixinEntity implements TiqualityEntity {
 
     public void setUpdateType(@Nonnull UpdateType type) {
         updateType = type;
+    }
+
+    @Override
+    public short getTargetTPS() { return targetTPS; }
+
+    @Override
+    public void setTargetTPS(short tps) {
+        if (tps <= 0 || tps > 20) tps = 20; // clamp
+        targetTPS = tps;
+    }
+
+    @Override
+    public boolean tickFractional() {
+        fractionalTick += targetTPS / (float) 20;
+        if (fractionalTick >= 1) {
+            fractionalTick %= 1;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override

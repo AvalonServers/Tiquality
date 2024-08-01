@@ -1,5 +1,6 @@
 package com.github.terminatornl.tiquality;
 
+import com.github.terminatornl.tiquality.interfaces.TPSConstrained;
 import com.github.terminatornl.tiquality.interfaces.TiqualityEntity;
 import com.github.terminatornl.tiquality.interfaces.UpdateTyped;
 import com.github.terminatornl.tiquality.monitor.TickMaster;
@@ -178,6 +179,11 @@ public class TiqualityConfig {
         })
         public String[] TICK_DENIED_BLOCKS = new String[]{
         };
+
+        @Config.Comment({
+                "Use this array to assign a custom target TPS. The block will never attempt to tick faster than the provided maximum."
+        })
+        public String[] TICK_LIMITED_BLOCKS = new String[]{};
     }
 
     public static class ENTITY_TICKING {
@@ -205,6 +211,12 @@ public class TiqualityConfig {
         })
         public String[] TICK_DENIED_ENTITIES = new String[]{
         };
+
+        @Config.Comment({
+                "Use this array to assign a custom target TPS. The entity will never attempt to tick faster than the provided maximum.",
+                "Example: minecraft:furnace;20"
+        })
+        public String[] TICK_LIMITED_ENTITIES = new String[]{};
     }
 
     @SuppressWarnings("NoTranslation")
@@ -475,6 +487,44 @@ public class TiqualityConfig {
             TMP_BLOCKS.clear();
 
             /*
+                TICK_LIMITED_BLOCKS
+             */
+            HashMap<Block, Short> TICKRATE_BLOCKS = new HashMap<Block, Short>(){};
+            for (String input : BLOCK_TICK_BEHAVIOR.TICK_LIMITED_BLOCKS) {
+                String[] components = input.split("@");
+                if (components.length != 2) continue;
+
+                String identifier = components[0];
+                short tickRate = Short.parseShort(components[1]);
+
+                if (identifier.startsWith("REGEX=")) {
+                    TMP_BLOCKS.addAll(findBlocks(identifier.substring(6)));
+                } else {
+                    String[] split = identifier.split(":");
+                    ResourceLocation location = new ResourceLocation(split[0], split[1]);
+
+                    Block block = Block.REGISTRY.getObject(location);
+
+                    if (block == Blocks.AIR) {
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
+                        Tiquality.LOGGER.warn("TICK_DENIED_BLOCKS: " + block);
+                        Tiquality.LOGGER.warn("This block has been skipped!");
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        continue;
+                    }
+                    TICKRATE_BLOCKS.put(block, tickRate);
+                }
+            }
+            for (Map.Entry<Block, Short> entry : TICKRATE_BLOCKS.entrySet()) {
+                Block block = entry.getKey();
+                Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(block).toString());
+                ((TPSConstrained) block).setTargetTPS(entry.getValue());
+            }
+            MODIFIED_BLOCKS.addAll(TICKRATE_BLOCKS.keySet());
+            TICKRATE_BLOCKS.clear();
+
+            /*
             ########################################################################
             ######################          ENTITIES          ######################
             ########################################################################
@@ -574,6 +624,42 @@ public class TiqualityConfig {
                 ENTITY_UPDATE_TYPES.put(location, UpdateType.TICK_DENIED);
             }
             TMP_ENTITIES.clear();
+
+            /*
+                TICK_LIMITED_ENTITIES
+             */
+            Tiquality.LOGGER.info("TICK_LIMITED_ENTITIES entities:");
+            HashMap<ResourceLocation, Short> TICKRATE_ENTITIES = new HashMap<ResourceLocation, Short>(){};
+            for (String input : ENTITY_TICK_BEHAVIOR.TICK_LIMITED_ENTITIES) {
+                String[] components = input.split("@");
+                if (components.length != 2) continue;
+
+                String identifier = components[0];
+                short tickRate = Short.parseShort(components[1]);
+
+                if (identifier.startsWith("REGEX=")) {
+                    TMP_ENTITIES.addAll(findEntities(ENTITY_LIST, identifier.substring(6)));
+                } else {
+                    String[] split = identifier.split(":");
+                    ResourceLocation location = new ResourceLocation(split[0], split[1]);
+                    if (ENTITY_LIST.contains(location) == false) {
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
+                        Tiquality.LOGGER.warn("TICK_DENIED_ENTITIES: " + location);
+                        Tiquality.LOGGER.warn("This entity has been skipped!");
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        continue;
+                    }
+                    TICKRATE_ENTITIES.put(location, tickRate);
+                }
+            }
+            for (Map.Entry<ResourceLocation, Short> entry : TICKRATE_ENTITIES.entrySet()) {
+                ResourceLocation location = entry.getKey();
+                Tiquality.LOGGER.info("+ " + location);
+                ENTITY_UPDATE_TYPES.put(location, UpdateType.TICK_DENIED);
+            }
+            TICKRATE_ENTITIES.clear();
+
             Tiquality.LOGGER.info("Scan complete.");
             Tiquality.LOGGER.info("Relinking entities...");
             for (World world : FMLCommonHandler.instance().getMinecraftServerInstance().worlds) {

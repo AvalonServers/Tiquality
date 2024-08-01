@@ -4,9 +4,6 @@ import com.github.terminatornl.tiquality.Tiquality;
 import com.github.terminatornl.tiquality.TiqualityConfig;
 import com.github.terminatornl.tiquality.api.Location;
 import com.github.terminatornl.tiquality.api.TiqualityException;
-import com.github.terminatornl.tiquality.integration.ExternalHooker;
-import com.github.terminatornl.tiquality.integration.griefdefender.GriefDefenderHook;
-import com.github.terminatornl.tiquality.integration.griefprevention.GriefPreventionHook;
 import com.github.terminatornl.tiquality.interfaces.*;
 import com.github.terminatornl.tiquality.monitor.InfoMonitor;
 import com.github.terminatornl.tiquality.monitor.TrackingTool;
@@ -225,6 +222,8 @@ public class CommandExecutor {
 
             UpdateType feetUpdateType = ((UpdateTyped) blockAtFeet).getUpdateType();
             UpdateType belowUpdateType = ((UpdateTyped) blockBelowFeet).getUpdateType();
+            short feetUpdateInterval = ((TPSConstrained) blockAtFeet).getTargetTPS();
+            short belowUpdateInterval = ((TPSConstrained) blockBelowFeet).getTargetTPS();
 
             boolean isBlockAtFeetAir = blockAtFeet.isAir(stateAtFeet, world, blockPosAtFeet);
             boolean isBlockBelowFeetAir = blockBelowFeet.isAir(stateBelowFeet, world, blockPosBelowFeet);
@@ -237,13 +236,13 @@ public class CommandExecutor {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition().down());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(PREFIX + "Block below: " +
-                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " TickType: ").appendSibling(belowUpdateType.getText(UpdateType.Type.BLOCK)).appendSibling(new TextComponentString(TextFormatting.WHITE + " Status: " + message.getText())));
+                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " TickType: ").appendSibling(belowUpdateType.getText(UpdateType.Type.BLOCK)).appendSibling(new TextComponentString(TextFormatting.WHITE + " Target TPS: " + belowUpdateInterval + " Status: " + message.getText())));
             }
             if (isBlockAtFeetAir == false) {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(PREFIX + "Block at feet: " +
-                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockAtFeet).toString() + TextFormatting.WHITE + " TickType: ").appendSibling(feetUpdateType.getText(UpdateType.Type.BLOCK)).appendSibling(new TextComponentString(TextFormatting.WHITE + " Status: " + message.getText())));
+                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockAtFeet).toString() + TextFormatting.WHITE + " TickType: ").appendSibling(feetUpdateType.getText(UpdateType.Type.BLOCK)).appendSibling(new TextComponentString(TextFormatting.WHITE + " Target TPS: " + feetUpdateInterval + " Status: " + message.getText())));
             }
         /*
 
@@ -787,60 +786,6 @@ public class CommandExecutor {
                 } else {
                     sender.sendMessage(new TextComponentString("BELOW: " + blockNameBelow + TextFormatting.GREEN + " NOT MARKED " + trackerTextBelow));
                 }
-            }
-
-
-        /*
-
-                GRIEFPREVENTION IMPORT
-
-         */
-        } else if (args[0].equalsIgnoreCase("import_griefprevention")) {
-            holder.checkPermission(PermissionHolder.Permission.ADMIN);
-            if (ExternalHooker.LOADED_HOOKS.contains("griefprevention")) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        GriefPreventionHook.loadClaimsForcibly(sender);
-                    }
-                }, "Tiquality GP import thread").start();
-            } else {
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefPrevention not detected."));
-            }
-        } else if (args[0].equalsIgnoreCase("import_griefprevention_claim")) {
-            holder.checkPermission(PermissionHolder.Permission.USE);
-            if (sender instanceof EntityPlayer == false) {
-                throw new CommandException("Only players can use this command.");
-            }
-            if (ExternalHooker.LOADED_HOOKS.contains("griefprevention")) {
-                GriefPreventionHook.importSingleClaim((EntityPlayer) sender);
-            } else {
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefPrevention not detected."));
-            }
-         /*
-                GRIEFDEFENDER IMPORT
-         */
-        } else if (args[0].equalsIgnoreCase("import_griefdefender")) {
-            holder.checkPermission(PermissionHolder.Permission.ADMIN);
-            if (ExternalHooker.LOADED_HOOKS.contains("griefdefender")) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        GriefDefenderHook.loadClaimsForcibly(sender);
-                    }
-                }, "Tiquality GP import thread").start();
-            } else {
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefDefender not detected."));
-            }
-        } else if (args[0].equalsIgnoreCase("import_griefdefender_claim")) {
-            holder.checkPermission(PermissionHolder.Permission.USE);
-            if (sender instanceof EntityPlayer == false) {
-                throw new CommandException("Only players can use this command.");
-            }
-            if (ExternalHooker.LOADED_HOOKS.contains("griefdefender")) {
-                GriefDefenderHook.importSingleClaim((EntityPlayer) sender);
-            } else {
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefDefender not detected."));
             }
         /*
 

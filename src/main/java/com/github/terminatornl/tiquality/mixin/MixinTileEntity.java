@@ -1,6 +1,7 @@
 package com.github.terminatornl.tiquality.mixin;
 
 import com.github.terminatornl.tiquality.Tiquality;
+import com.github.terminatornl.tiquality.interfaces.TPSConstrained;
 import com.github.terminatornl.tiquality.interfaces.TiqualitySimpleTickable;
 import com.github.terminatornl.tiquality.interfaces.UpdateTyped;
 import com.github.terminatornl.tiquality.profiling.ReferencedTickable;
@@ -17,7 +18,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Mixin(TileEntity.class)
-public abstract class MixinTileEntity implements TiqualitySimpleTickable, UpdateTyped {
+public abstract class MixinTileEntity implements TiqualitySimpleTickable, UpdateTyped, TPSConstrained {
 
     @Shadow
     protected BlockPos pos;
@@ -93,4 +94,13 @@ public abstract class MixinTileEntity implements TiqualitySimpleTickable, Update
     public void setUpdateType(@Nonnull UpdateType type) {
         ((UpdateTyped) this.getBlockType()).setUpdateType(type);
     }
+
+    @Override
+    public short getTargetTPS() { return ((TPSConstrained) this.getBlockType()).getTargetTPS(); }
+
+    @Override
+    public void setTargetTPS(short tps) { ((TPSConstrained) this.getBlockType()).setTargetTPS(tps); }
+
+    @Override
+    public boolean tickFractional() { return ((TPSConstrained) this.getBlockType()).tickFractional(); }
 }

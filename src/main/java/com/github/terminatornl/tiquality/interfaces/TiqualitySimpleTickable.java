@@ -6,7 +6,7 @@ import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
 
-public interface TiqualitySimpleTickable extends UpdateTyped {
+public interface TiqualitySimpleTickable extends UpdateTyped, TPSConstrained {
 
     /**
      * Checks if this tickable is loaded, eg: chunk load status

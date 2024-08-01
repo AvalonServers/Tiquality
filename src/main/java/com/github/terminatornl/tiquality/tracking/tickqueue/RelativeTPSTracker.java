@@ -170,4 +170,15 @@ public class RelativeTPSTracker implements TiqualitySimpleTickable {
     public void setUpdateType(@Nonnull UpdateType type) {
 
     }
+
+    @Override
+    public short getTargetTPS() { return 20; }
+
+    @Override
+    public void setTargetTPS(short tps) {
+
+    }
+
+    @Override
+    public boolean tickFractional() { return true; }
 }
