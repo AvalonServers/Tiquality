@@ -27,6 +27,7 @@ apply plugin: 'net.minecraftforge.gradle.forge'
 apply plugin: 'org.spongepowered.mixin'
 
 repositories {
+    mavenLocal()
     maven {
         name = "Sponge"
         url = "https://repo.spongepowered.org/maven/"
@@ -120,20 +121,20 @@ dependencies {
         Caused by module: bstats-sponge
      */
     //TODO: Wait for GriefPrevention to update to the latest Sponge API
-    compileOnly 'me.ryanhamshire:griefprevention:1.12.2-4.3.0.662:original'
+    //compileOnly 'me.ryanhamshire:griefprevention:1.12.2-4.3.0.662:original'
 
-    compileOnly 'com.github.bloodmc:GriefDefenderAPI:-SNAPSHOT'
+    //compileOnly 'com.github.bloodmc:GriefDefenderAPI:-SNAPSHOT'
 
 
     /*
         FTB Utilities
      */
-    compileOnly 'ftb-utilities:FTBUtilities:5.3.0.52'
+    compileOnly 'com.feed_the_beast.mods:FTBUtilities:5.4.1.custom'
 
     /*
         FTB Library
      */
-    compileOnly 'ftblib:FTBLib:5.3.0.56'
+    compileOnly 'com.feed_the_beast.mods:FTBLib:5.4.7.0'
 
     if(isFat) {
         embed('org.spongepowered:mixin:0.8-SNAPSHOT') {
